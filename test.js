@@ -54,6 +54,11 @@ function signatureTest () {
   ppub.init(pub)
   assert(ppub.verify(sig, msg))
 
+  // bad signature
+  sig.a_[0]++
+  assert(!pub.verify(sig, msg))
+  assert(!ppub.verify(sig, msg))
+
   ppub.destroy() // necessary to avoid memory leak
 }
 
