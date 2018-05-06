@@ -85,4 +85,3 @@ function benchEcdsa () {
 function benchAll () {
   benchEcdsa()
 }
-

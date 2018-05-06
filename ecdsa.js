@@ -52,16 +52,6 @@
       }
       return a
     }
-///////////////////////////
-    const copyToUint32Array = (a, pos) => {
-      a.set(mod.HEAP32.subarray(pos / 4, pos / 4 + a.length))
-    }
-    const copyFromUint32Array = (pos, a) => {
-      for (let i = 0; i < a.length; i++) {
-        mod.HEAP32[pos / 4 + i] = a[i]
-      }
-    }
-//////////////////////////////////
     const _wrapGetStr = (func, returnAsStr = true) => {
       return (x, ioMode = 0) => {
         const maxBufSize = 3096
@@ -118,22 +108,9 @@
         if (r) throw new Error('err _wrapInput ' + buf)
       }
     }
-    const callSetter = (func, a, p1, p2) => {
-      const pos = mod._malloc(a.length * 4)
-      func(pos, p1, p2) // p1, p2 may be undefined
-      copyToUint32Array(a, pos)
-      mod._free(pos)
-    }
-    const callGetter = (func, a, p1, p2) => {
-      const pos = mod._malloc(a.length * 4)
-      mod.HEAP32.set(a, pos / 4)
-      const s = func(pos, p1, p2)
-      mod._free(pos)
-      return s
-    }
     exports.ecdsaInit = () => {
       const r = mod._ecdsaInit()
-      if (r) throw ('ecdsaInit err ' + r)
+      if (r) throw new Error('ecdsaInit err ' + r)
     }
 
     mod.ecdsaSecretKeySerialize = _wrapSerialize(mod._ecdsaSecretKeySerialize)
@@ -179,7 +156,7 @@
         this.a_.set(mod.HEAP32.subarray(pos / 4, pos / 4 + this.a_.length))
       }
       // save and free
-      _saveAndFree(pos) {
+      _saveAndFree (pos) {
         this._save(pos)
         _free(pos)
       }
@@ -196,36 +173,6 @@
         const s = func(pos, p1, p2)
         _free(pos)
         return s
-      }
-      _isEqual (func, rhs) {
-        const xPos = this._allocAndCopy()
-        const yPos = rhs._allocAndCopy()
-        const r = func(xPos, yPos)
-        _free(yPos)
-        _free(xPos)
-        return r === 1
-      }
-      // func(y, this) and return y
-      _op1 (func) {
-        const y = new this.constructor()
-        const xPos = this._allocAndCopy()
-        const yPos = y._alloc()
-        func(yPos, xPos)
-        y._saveAndFree(yPos)
-        _free(xPos)
-        return y
-      }
-      // func(z, this, y) and return z
-      _op2 (func, y, Cstr = null) {
-        const z = Cstr ? new Cstr() : new this.constructor()
-        const xPos = this._allocAndCopy()
-        const yPos = y._allocAndCopy()
-        const zPos = z._alloc()
-        func(zPos, xPos, yPos)
-        z._saveAndFree(zPos)
-        _free(yPos)
-        _free(xPos)
-        return z
       }
     }
 
@@ -289,7 +236,7 @@
         const r = mod.ecdsaVerify(sigPos, pubPos, m)
         _free(sigPos)
         _free(pubPos)
-        return r != 0
+        return r !== 0
       }
     }
     exports.deserializeHexStrToPublicKey = s => {
@@ -322,7 +269,7 @@
         const sigPos = sig._allocAndCopy()
         const r = mod.ecdsaVerifyPrecomputed(sigPos, this.p, m)
         _free(sigPos)
-        return r != 0
+        return r !== 0
       }
     }
 
