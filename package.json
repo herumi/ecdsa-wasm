@@ -1,0 +1,36 @@
+{
+  "name": "ecdsa-wasm",
+  "version": "0.0.1",
+  "description": "ecdsa/secp256k1 + SHA-256 for Node.js by WebAssembly",
+  "main": "ecdsa.js",
+  "scripts": {
+    "lint": "standard ecdsa.js",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/herumi/ecdsa-wasm.git"
+  },
+  "keywords": [
+    "elliptic curve",
+    "WebAssembly",
+    "pairing"
+  ],
+  "author": "herumi <herumi@nifty.com> (https://github.com/herumi/)",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/herumi/ecdsa-wasm/issues"
+  },
+  "engines": {
+    "node": ">=8.9.0"
+  },
+  "homepage": "https://github.com/herumi/ecdsa-wasm#readme",
+  "devDependencies": {
+    "coveralls": "^3.0.0",
+    "istanbul": "^0.4.5",
+    "standard": "^10.0.3"
+  },
+  "dependencies": {
+    "nyc": "^11.4.1"
+  }
+}
