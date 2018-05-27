@@ -17,7 +17,7 @@
     const ECDSA_SIGNATURE_SIZE = ECDSA_FP_SIZE * 2
 
     const _free = pos => {
-      mod._free(pos)
+      mod._ecdsaFree(pos)
     }
     const ptrToAsciiStr = (pos, n) => {
       let s = ''
@@ -292,6 +292,13 @@
     exports.ecdsaInit()
     console.log('finished')
   } // setup()
+  const _cryptoGetRandomValues = function(p, n) {
+    const a = new Uint8Array(n)
+    crypto.getRandomValues(a)
+    for (let i = 0; i < n; i++) {
+      exports.mod.HEAP8[p + i] = a[i]
+    }
+  }
   exports.init = () => {
     const name = 'ecdsa_c'
     return new Promise(resolve => {
@@ -299,6 +306,7 @@
         const path = require('path')
         const js = require(`./${name}.js`)
         const Module = {
+          cryptoGetRandomValues : _cryptoGetRandomValues,
           locateFile: baseName => { return path.join(__dirname, baseName) }
         }
         js(Module)
@@ -313,6 +321,7 @@
           .then(buffer => new Uint8Array(buffer))
           .then(() => {
             exports.mod = Module() // eslint-disable-line
+            exports.mod.cryptoGetRandomValues = _cryptoGetRandomValues
             exports.mod.onRuntimeInitialized = () => {
               setup(exports)
               resolve()
