@@ -16,6 +16,9 @@
     const ECDSA_PUBLICKEY_SIZE = ECDSA_FP_SIZE * 3
     const ECDSA_SIGNATURE_SIZE = ECDSA_FP_SIZE * 2
 
+    const _malloc = pos => {
+      return mod._ecdsaMalloc(pos)
+    }
     const _free = pos => {
       mod._ecdsaFree(pos)
     }
@@ -55,7 +58,7 @@
     const _wrapGetStr = (func, returnAsStr = true) => {
       return (x, ioMode = 0) => {
         const maxBufSize = 3096
-        const pos = mod._malloc(maxBufSize)
+        const pos = _malloc(maxBufSize)
         const n = func(pos, maxBufSize, x, ioMode)
         if (n <= 0) {
           throw new Error('err gen_str:' + x)
@@ -75,7 +78,7 @@
     }
     const _wrapDeserialize = func => {
       return (x, buf) => {
-        const pos = mod._malloc(buf.length)
+        const pos = _malloc(buf.length)
         mod.HEAP8.set(buf, pos)
         const r = func(x, pos, buf.length)
         _free(pos)
@@ -96,7 +99,7 @@
           throw new Error(`err bad type:"${typeStr}". Use String or Uint8Array.`)
         }
         const ioMode = args[argNum + 1] // may undefined
-        const pos = mod._malloc(buf.length)
+        const pos = _malloc(buf.length)
         if (typeStr === '[object String]') {
           asciiStrToPtr(pos, buf)
         } else {
@@ -143,7 +146,7 @@
       }
       // alloc new array
       _alloc () {
-        return mod._malloc(this.a_.length * 4)
+        return _malloc(this.a_.length * 4)
       }
       // alloc and copy a_ to mod.HEAP32[pos / 4]
       _allocAndCopy () {

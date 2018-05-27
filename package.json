@@ -1,6 +1,6 @@
 {
   "name": "ecdsa-wasm",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "ecdsa/secp256k1 + SHA-256 for Node.js by WebAssembly",
   "main": "ecdsa.js",
   "scripts": {
