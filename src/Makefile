@@ -41,10 +41,10 @@ EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
 
-../ecdsa_c.js: src/ecdsa_c.cpp src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
+../ecdsa_c.js: $(MCL_DIR)/src/ecdsa_c.cpp $(MCL_DIR)/src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
 	emcc -o $@ $(MCL_DIR)/src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions -I $(MCL_DIR)/include -I ./include
 
-ecdsa-wasm:
+wasm:
 	$(MAKE) ../ecdsa_c.js
 
 clean:

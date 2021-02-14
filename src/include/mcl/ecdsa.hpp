@@ -177,7 +177,9 @@ inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t m
 	local::setHashOf(z, msg, msgSize);
 	Ec Q;
 	for (;;) {
-		k.setByCSPRNG();
+		bool b;
+		k.setByCSPRNG(&b);
+		(void)b;
 		param.Pbase.mul(Q, k);
 		if (Q.isZero()) continue;
 		Q.normalize();

@@ -1,0 +1,5 @@
+*.a
+*.o
+*.d
+*.exe
+src/result.txt

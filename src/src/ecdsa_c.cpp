@@ -65,7 +65,9 @@ mclSize ecdsaSignatureDeserialize(ecdsaSignature* sig, const void *buf, mclSize 
 //	return 0 if success
 int ecdsaSecretKeySetByCSPRNG(ecdsaSecretKey *sec)
 {
-	cast(sec)->setByCSPRNG();
+	bool b;
+	cast(sec)->setByCSPRNG(&b);
+	if (!b) return -1;
 	return 0;
 }
 
