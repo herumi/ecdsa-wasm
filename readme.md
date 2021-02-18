@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/herumi/ecdsa-wasm.png)](https://travis-ci.org/herumi/ecdsa-wasm)
+[![Build Status](https://api.travis-ci.com/herumi/ecdsa-wasm.svg?branch=master)](https://travis-ci.com/github/herumi/ecdsa-wasm)
+
 # ECSSA/secp256k1 + SHA-256
 
 # Abstract
