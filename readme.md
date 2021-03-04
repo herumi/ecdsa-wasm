@@ -1,4 +1,4 @@
-[![Build Status](https://api.travis-ci.com/herumi/ecdsa-wasm.svg?branch=master)](https://travis-ci.com/github/herumi/ecdsa-wasm)
+[![Build Status](https://github.com/herumi/ecdsa-wasm/actions/workflows/main.yml/badge.svg)](https://github.com/herumi/ecdsa-wasm/actions/workflows/main.yml)
 
 # ECSSA/secp256k1 + SHA-256
 
