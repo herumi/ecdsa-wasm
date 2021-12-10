@@ -48,7 +48,7 @@ mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublic
 	if (sizeX == 0) return 0;
 	size_t sizeY = p.y.serialize((uint8_t*)buf + sizeX, maxBufSize - sizeX);
 	if (sizeY == 0) return 0;
-	return mclSize(sizeX + sizeY);
+	return (mclSize)(sizeX + sizeY);
 }
 mclSize ecdsaSignatureSerialize(void *buf, mclSize maxBufSize, const ecdsaSignature *sig)
 {

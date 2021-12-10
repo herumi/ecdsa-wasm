@@ -80,6 +80,9 @@ inline void init(bool *pb)
 	p.Pbase.init(pb, p.P, p.bitSize, local::winSize);
 	// isValid() checks the order
 	Ec::setOrder(Zn::getOp().mp);
+	Fp::setETHserialization(true);
+	Zn::setETHserialization(true);
+	Ec::setIoMode(mcl::IoEcAffineSerialize);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION

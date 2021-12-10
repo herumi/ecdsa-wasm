@@ -30,7 +30,7 @@ CYBOZU_TEST_AUTO(ecdsa)
 	CYBOZU_TEST_ASSERT(!verify(sig, pub, msg.c_str(), msg.size()));
 }
 
-void oneTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
+void serializeStrTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
 {
 	SecretKey sec;
 	sec.setStr(secHex, 16);
@@ -47,6 +47,31 @@ void oneTest(const std::string& msg, const std::string& secHex, const std::strin
 	const std::string sHex = sigHex.substr(64, 64);
 	sig.r.setStr(rHex, 16);
 	sig.s.setStr(sHex, 16);
+	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
+}
+
+void serializeBinaryTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
+{
+	SecretKey sec;
+	sec.deserializeHexStr(secHex);
+	CYBOZU_TEST_EQUAL(sec.serializeToHexStr(), secHex);
+	PublicKey pub;
+	getPublicKey(pub, sec);
+	pub.normalize();
+#if 0
+	Ec t;
+	t.deserializeHexStr(pubHex);
+#else
+	const std::string xHex = pubHex.substr(0, 64);
+	const std::string yHex = pubHex.substr(64, 64);
+	Ec t;
+	t.x.deserializeHexStr(xHex);
+	t.y.deserializeHexStr(yHex);
+	t.z = 1;
+#endif
+	CYBOZU_TEST_EQUAL(pub, t);
+	Signature sig;
+	sig.deserializeHexStr(sigHex);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
 }
 
@@ -73,7 +98,8 @@ CYBOZU_TEST_AUTO(value)
 		},
 	};
 	for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
-		oneTest(tbl[i].msg, tbl[i].sec, tbl[i].pub, tbl[i].sig);
+		serializeStrTest(tbl[i].msg, tbl[i].sec, tbl[i].pub, tbl[i].sig);
+		serializeBinaryTest(tbl[i].msg, tbl[i].sec, tbl[i].pub, tbl[i].sig);
 	}
 }
 
