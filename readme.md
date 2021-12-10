@@ -47,11 +47,15 @@ ppub.destroy()
 ```
 
 ## how to build
-Install emscripten.
 
 ```
-cd src
-make wasm
+mkdir work
+cd work
+git clone git@github.com:herumi/mcl
+git clone git@github.com:herumi/cybozulib
+mkdir ecdsa-wasm
+cd mcl
+make ecdsa-wasm
 ```
 
 # License
