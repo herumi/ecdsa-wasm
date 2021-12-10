@@ -189,14 +189,19 @@ inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t m
 
 namespace local {
 
-inline void mulDispatch(Ec& Q, const PublicKey& pub, const Zn& y)
-{
-	Ec::mul(Q, pub, y);
+inline void dispatch(Ec& Q, const PublicKey& pub, const Zn *u){
+	Ec Q2;
+	param.Pbase.mul(Q, u[0]);
+	Ec::mul(Q2, pub, u[1]);
+	Q += Q2;
 }
 
-inline void mulDispatch(Ec& Q, const PrecomputedPublicKey& ppub, const Zn& y)
+inline void dispatch(Ec& Q, const PrecomputedPublicKey& ppub, const Zn *u)
 {
-	ppub.pubBase_.mul(Q, y);
+	Ec Q2;
+	param.Pbase.mul(Q, u[0]);
+	ppub.pubBase_.mul(Q2, u[1]);
+	Q += Q2;
 }
 
 template<class Pub>
@@ -205,20 +210,17 @@ inline bool verify(const Signature& sig, const Pub& pub, const void *msg, size_t
 	const Zn& r = sig.r;
 	const Zn& s = sig.s;
 	if (r.isZero() || s.isZero()) return false;
-	Zn z, w, u1, u2;
+	Zn z, w, u[2];
 	local::setHashOf(z, msg, msgSize);
 	Zn::inv(w, s);
-	Zn::mul(u1, z, w);
-	Zn::mul(u2, r, w);
-	Ec Q1, Q2;
-	param.Pbase.mul(Q1, u1);
-//	Ec::mul(Q2, pub, u2);
-	local::mulDispatch(Q2, pub, u2);
-	Q1 += Q2;
-	if (Q1.isZero()) return false;
-	Q1.normalize();
+	Zn::mul(u[0], z, w);
+	Zn::mul(u[1], r, w);
+	Ec Q;
+	dispatch(Q, pub, u);
+	if (Q.isZero()) return false;
+	Q.normalize();
 	Zn x;
-	local::FpToZn(x, Q1.x);
+	local::FpToZn(x, Q.x);
 	return r == x;
 }
 
