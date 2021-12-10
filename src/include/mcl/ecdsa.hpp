@@ -43,19 +43,6 @@ inline Param& getParam()
 	return p;
 }
 
-#if 0
-inline void be32toZn(Zn& x, const mcl::fp::Unit *buf)
-{
-	const size_t n = 32;
-	const unsigned char *p = (const unsigned char*)buf;
-	unsigned char be[n];
-	for (size_t i = 0; i < n; i++) {
-		be[i] = p[n - 1 - i];
-	}
-	x.setArrayMaskMod(be, n);
-}
-#endif
-
 /*
 	y = x mod n
 */
@@ -91,6 +78,8 @@ inline void init(bool *pb)
 	if (!*pb) return;
 	p.bitSize = 256;
 	p.Pbase.init(pb, p.P, p.bitSize, local::winSize);
+	// isValid() checks the order
+	Ec::setOrder(Zn::getOp().mp);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION

@@ -1,17 +1,21 @@
 #include <mcl/ecdsa.h>
 #include <cybozu/test.hpp>
 #include <string.h>
+#include <stdint.h>
 
 template<class T, class Serializer, class Deserializer>
 void serializeTest(const T& x, const Serializer& serialize, const Deserializer& deserialize)
 {
-	char buf[128];
-	size_t n = serialize(buf, sizeof(buf), &x);
+	uint8_t buf1[128];
+	uint8_t buf2[128];
+	size_t n = serialize(buf1, sizeof(buf1), &x);
 	CYBOZU_TEST_ASSERT(n > 0);
 	T y;
-	size_t m = deserialize(&y, buf, n);
+	size_t m = deserialize(&y, buf1, n);
 	CYBOZU_TEST_EQUAL(m, n);
-	CYBOZU_TEST_ASSERT(memcmp(&x, &y, n) == 0);
+	size_t n2 = serialize(buf2, sizeof(buf2), &y);
+	CYBOZU_TEST_EQUAL(n, n2);
+	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2, n);
 }
 
 CYBOZU_TEST_AUTO(ecdsa)
