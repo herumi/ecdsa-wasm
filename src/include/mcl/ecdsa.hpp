@@ -43,17 +43,6 @@ inline Param& getParam()
 	return p;
 }
 
-inline void be32toZn(Zn& x, const mcl::fp::Unit *buf)
-{
-	const size_t n = 32;
-	const unsigned char *p = (const unsigned char*)buf;
-	unsigned char be[n];
-	for (size_t i = 0; i < n; i++) {
-		be[i] = p[n - 1 - i];
-	}
-	x.setArrayMaskMod(be, n);
-}
-
 /*
 	y = x mod n
 */
@@ -61,16 +50,21 @@ inline void FpToZn(Zn& y, const Fp& x)
 {
 	fp::Block b;
 	x.getBlock(b);
-	y.setArrayMaskMod(b.p, b.n);
+	bool ret;
+	y.setArrayMod(&ret, b.p, b.n);
+	assert(ret);
+	(void)ret;
 }
 
 inline void setHashOf(Zn& x, const void *msg, size_t msgSize)
 {
-	mcl::fp::Unit xBuf[256 / 8 / sizeof(mcl::fp::Unit)];
-	uint32_t hashSize = mcl::fp::sha256(xBuf, sizeof(xBuf), msg, (uint32_t)msgSize);
-	assert(hashSize == sizeof(xBuf));
-	(void)hashSize;
-	be32toZn(x, xBuf);
+	const size_t mdSize = 32;
+	uint8_t md[mdSize];
+	mcl::fp::sha256(md, mdSize, msg, msgSize);
+	bool b;
+	x.setBigEndianMod(&b, md, mdSize);
+	assert(b);
+	(void)b;
 }
 
 } // mcl::ecdsa::local
