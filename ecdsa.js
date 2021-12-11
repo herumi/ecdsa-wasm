@@ -132,37 +132,46 @@
       constructor (size) {
         this.a_ = new Uint32Array(size / 4)
       }
+
       deserializeHexStr (s) {
         this.deserialize(exports.fromHexStr(s))
       }
+
       serializeToHexStr () {
         return exports.toHexStr(this.serialize())
       }
+
       dump (msg = '') {
         console.log(msg + this.serializeToHexStr())
       }
+
       clear () {
         this.a_.fill(0)
       }
+
       // alloc new array
       _alloc () {
         return _malloc(this.a_.length * 4)
       }
+
       // alloc and copy a_ to mod.HEAP32[pos / 4]
       _allocAndCopy () {
         const pos = this._alloc()
         mod.HEAP32.set(this.a_, pos / 4)
         return pos
       }
+
       // save pos to a_
       _save (pos) {
         this.a_.set(mod.HEAP32.subarray(pos / 4, pos / 4 + this.a_.length))
       }
+
       // save and free
       _saveAndFree (pos) {
         this._save(pos)
         _free(pos)
       }
+
       // set parameter (p1, p2 may be undefined)
       _setter (func, p1, p2) {
         const pos = this._alloc()
@@ -170,6 +179,7 @@
         this._saveAndFree(pos)
         if (r) throw new Error('_setter err')
       }
+
       // getter (p1, p2 may be undefined)
       _getter (func, p1, p2) {
         const pos = this._allocAndCopy()
@@ -183,15 +193,19 @@
       constructor () {
         super(ECDSA_SECRETKEY_SIZE)
       }
+
       deserialize (s) {
         this._setter(mod.ecdsaSecretKeyDeserialize, s)
       }
+
       serialize () {
         return this._getter(mod.ecdsaSecretKeySerialize)
       }
+
       setByCSPRNG () {
         this._setter(mod._ecdsaSecretKeySetByCSPRNG)
       }
+
       getPublicKey () {
         const pub = new exports.PublicKey()
         const secPos = this._allocAndCopy()
@@ -201,6 +215,7 @@
         _free(secPos)
         return pub
       }
+
       /*
         input
         m : message (string or Uint8Array)
@@ -227,12 +242,15 @@
       constructor () {
         super(ECDSA_PUBLICKEY_SIZE)
       }
+
       deserialize (s) {
         this._setter(mod.ecdsaPublicKeyDeserialize, s)
       }
+
       serialize () {
         return this._getter(mod.ecdsaPublicKeySerialize)
       }
+
       verify (sig, m) {
         const pubPos = this._allocAndCopy()
         const sigPos = sig._allocAndCopy()
@@ -251,6 +269,7 @@
       constructor () {
         this.p = mod._ecdsaPrecomputedPublicKeyCreate()
       }
+
       /*
         call destroy if PrecomputedPublicKey is not necessary
         to avoid memory leak
@@ -260,6 +279,7 @@
         mod._ecdsaPrecomputedPublicKeyDestroy(this.p)
         this.p = null
       }
+
       /*
         initialize PrecomputedPublicKey by PublicKey pub
       */
@@ -268,6 +288,7 @@
         mod._ecdsaPrecomputedPublicKeyInit(this.p, pubPos)
         _free(pubPos)
       }
+
       verify (sig, m) {
         const sigPos = sig._allocAndCopy()
         const r = mod.ecdsaVerifyPrecomputed(sigPos, this.p, m)
@@ -280,9 +301,11 @@
       constructor () {
         super(ECDSA_SIGNATURE_SIZE)
       }
+
       deserialize (s) {
         this._setter(mod.ecdsaSignatureDeserialize, s)
       }
+
       serialize () {
         return this._getter(mod.ecdsaSignatureSerialize)
       }
@@ -295,7 +318,7 @@
     exports.ecdsaInit()
     console.log('finished')
   } // setup()
-  const _cryptoGetRandomValues = function(p, n) {
+  const _cryptoGetRandomValues = function (p, n) {
     const a = new Uint8Array(n)
     crypto.getRandomValues(a)
     for (let i = 0; i < n; i++) {
@@ -309,7 +332,7 @@
         const path = require('path')
         const js = require(`./${name}.js`)
         const Module = {
-          cryptoGetRandomValues : _cryptoGetRandomValues,
+          cryptoGetRandomValues: _cryptoGetRandomValues,
           locateFile: baseName => { return path.join(__dirname, baseName) }
         }
         js(Module)
