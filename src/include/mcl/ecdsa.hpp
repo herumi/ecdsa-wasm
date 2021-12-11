@@ -82,7 +82,7 @@ inline void init(bool *pb)
 	Ec::setOrder(Zn::getOp().mp);
 	Fp::setETHserialization(true);
 	Zn::setETHserialization(true);
-	Ec::setIoMode(mcl::IoEcAffineSerialize);
+//	Ec::setIoMode(mcl::IoEcAffineSerialize);
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION

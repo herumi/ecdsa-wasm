@@ -39,6 +39,15 @@ function valueSubTest (msg, secHex, pubHex, sigHex) {
   const sec = ecdsa.deserializeHexStrToSecretKey(secHex)
   const pub = ecdsa.deserializeHexStrToPublicKey(pubHex)
   const sig = ecdsa.deserializeHexStrToSignature(sigHex)
+  assert.equal(sec.serializeToHexStr(), secHex)
+  assert.equal(pub.serializeToHexStr(), pubHex)
+  assert.equal(sig.serializeToHexStr(), sigHex)
+  assert(pub.verify(sig, msg))
+  {
+    const pub2 = sec.getPublicKey()
+    assert.equal(pub2.serializeToHexStr(), pubHex)
+    assert(pub2.verify(sig, msg))
+  }
 }
 
 function valueTest () {
