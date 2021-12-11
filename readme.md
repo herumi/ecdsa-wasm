@@ -6,6 +6,10 @@
 
 This is a wasm version of [mcl/ecdsa.h](https://github.com/herumi/mcl/blob/master/include/mcl/ecdsa.h)
 
+## News
+The format of `serialize()` has changed at the version 0.9.0.
+see [serialize](#serialization)
+
 ## for Node.js
 ```
 npm test
