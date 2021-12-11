@@ -35,14 +35,27 @@ test: $(TEST_EXE)
 	@sh -ec 'for i in $(TEST_EXE); do $$i|grep "ctest:name"; done' > result.txt
 	@grep -v "ng=0, exception=0" result.txt; if [ $$? -eq 1 ]; then echo "all unit tests succeed"; else exit 1; fi
 
+#EMCC_OPT=-I./include -I./src -Wall -Wextra
+#EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8 -std=c++03
+#EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0  -s MODULARIZE=1 #-s ASSERTIONS=1
+#EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
+#EMCC_OPT+=-s ABORTING_MALLOC=0
 EMCC_OPT=-I./include -I./src -Wall -Wextra
-EMCC_OPT+=-O3 -DNDEBUG -DMCLSHE_WIN_SIZE=8 -std=c++03
-EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0  -s MODULARIZE=1 #-s ASSERTIONS=1
+EMCC_OPT+=-DMCLSHE_WIN_SIZE=8
+EMCC_OPT+=-O3 -DNDEBUG -std=c++03
+EMCC_OPT+=-DMCL_SIZEOF_UNIT=4
+EMCC_OPT+=-s WASM=1 -s NO_EXIT_RUNTIME=1 -s NODEJS_CATCH_EXIT=0 -s NODEJS_CATCH_REJECTION=0
+EMCC_OPT+=-s MODULARIZE=1
+EMCC_OPT+=-s STRICT_JS=1
+EMCC_OPT+=-s SINGLE_FILE=1
+EMCC_OPT+=--minify 0
 EMCC_OPT+=-DCYBOZU_MINIMUM_EXCEPTION
 EMCC_OPT+=-s ABORTING_MALLOC=0
 
 ../ecdsa_c.js: ./ecdsa_c.cpp $(MCL_DIR)/src/fp.cpp include/mcl/ecdsa.hpp include/mcl/ecdsa.h Makefile
 	emcc -o $@ $(MCL_DIR)/src/fp.cpp src/ecdsa_c.cpp $(EMCC_OPT) -DMCL_MAX_BIT_SIZE=256 -DMCL_USE_WEB_CRYPTO_API -s DISABLE_EXCEPTION_CATCHING=1 -DCYBOZU_DONT_USE_EXCEPTION -DCYBOZU_DONT_USE_STRING -fno-exceptions -I $(MCL_DIR)/include -I ./include
+	# disable require fs, path
+	perl -i -pe 's@(.* = require\(.*)@//\1@' $@
 
 wasm:
 	$(MAKE) ../ecdsa_c.js

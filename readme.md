@@ -7,7 +7,9 @@
 This is a wasm version of [mcl/ecdsa.h](https://github.com/herumi/mcl/blob/master/include/mcl/ecdsa.h)
 
 ## for Node.js
-node test.js
+```
+npm test
+```
 
 ## how to use
 ```
@@ -45,6 +47,17 @@ false
 // destroy ppub if unnecessary
 ppub.destroy()
 ```
+
+### serialization
+- `SecretKey.serialize()`
+- `PublicKey.serialize()`
+- `Signature.serialize()`
+  - returns `Uint8Array` of a value as a big endian
+  - `PublicKey` returns a concatination of `x` and `y`
+- `SecretKey.deserialize(a)`
+- `PublicKey.deserialize(a)`
+- `Signature.deserialize(a)`
+  - take `Uint8Array` of `a` and constract the object
 
 ## how to build
 

@@ -1,14 +1,5 @@
-(generator => {
-  if (typeof exports === 'object') {
-    const crypto = require('crypto')
-    crypto.getRandomValues = crypto.randomFillSync
-    generator(exports, crypto, true)
-  } else {
-    const crypto = window.crypto || window.msCrypto
-    const exports = {}
-    window.ecdsa = generator(exports, crypto, false)
-  }
-})((exports, crypto, isNodeJs) => {
+const setupFactory = (createModule, getRandomValues) => {
+  const exports = {}
   const setup = (exports) => {
     const mod = exports.mod
     const ECDSA_FP_SIZE = 32
@@ -111,11 +102,6 @@
         if (r) throw new Error('err _wrapInput ' + buf)
       }
     }
-    exports.ecdsaInit = () => {
-      const r = mod._ecdsaInit()
-      if (r) throw new Error('ecdsaInit err ' + r)
-    }
-
     mod.ecdsaSecretKeySerialize = _wrapSerialize(mod._ecdsaSecretKeySerialize)
     mod.ecdsaPublicKeySerialize = _wrapSerialize(mod._ecdsaPublicKeySerialize)
     mod.ecdsaSignatureSerialize = _wrapSerialize(mod._ecdsaSignatureSerialize)
@@ -315,46 +301,30 @@
       r.deserializeHexStr(s)
       return r
     }
-    exports.ecdsaInit()
-    console.log('finished')
+    const r = mod._ecdsaInit()
+    if (r) throw new Error('ecdsaInit err ' + r)
   } // setup()
-  const _cryptoGetRandomValues = function (p, n) {
+  const _cryptoGetRandomValues = function(p, n) {
     const a = new Uint8Array(n)
-    crypto.getRandomValues(a)
+    exports.getRandomValues(a)
     for (let i = 0; i < n; i++) {
       exports.mod.HEAP8[p + i] = a[i]
     }
   }
-  exports.init = () => {
-    const name = 'ecdsa_c'
-    return new Promise(resolve => {
-      if (isNodeJs) {
-        const path = require('path')
-        const js = require(`./${name}.js`)
-        const Module = {
-          cryptoGetRandomValues: _cryptoGetRandomValues,
-          locateFile: baseName => { return path.join(__dirname, baseName) }
-        }
-        js(Module)
-          .then(_mod => {
-            exports.mod = _mod
-            setup(exports)
-            resolve()
-          })
-      } else {
-        fetch(`./${name}.wasm`) // eslint-disable-line
-          .then(response => response.arrayBuffer())
-          .then(buffer => new Uint8Array(buffer))
-          .then(() => {
-            exports.mod = Module() // eslint-disable-line
-            exports.mod.cryptoGetRandomValues = _cryptoGetRandomValues
-            exports.mod.onRuntimeInitialized = () => {
-              setup(exports)
-              resolve()
-            }
-          })
-      }
+  exports.getRandFunc = () => {
+    return exports.getRandomValues
+  }
+  exports.setRandFunc = (f) => {
+    exports.getRandomValues = f
+  }
+  exports.init = async () => {
+    exports.getRandomValues = getRandomValues
+    exports.mod = await createModule({
+      cryptoGetRandomValues: _cryptoGetRandomValues,
     })
+    setup(exports)
   }
   return exports
-})
+}
+
+module.exports = setupFactory

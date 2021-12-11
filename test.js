@@ -1,5 +1,5 @@
 'use strict'
-const ecdsa = require('./ecdsa.js')
+const ecdsa = require('./index.js')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
