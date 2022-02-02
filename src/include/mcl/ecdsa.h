@@ -88,7 +88,11 @@ ECDSA_DLL_API void ecdsaGetPublicKey(ecdsaPublicKey *pub, const ecdsaSecretKey *
 
 ECDSA_DLL_API void ecdsaSign(ecdsaSignature *sig, const ecdsaSecretKey *sec, const void *m, mclSize size);
 
+// normalize sig to lower S (r, s) such that s < half
+ECDSA_DLL_API void ecdsaNormalizeSignature(ecdsaSignature *sig);
+
 // return 1 if valid
+// accept only lower S signature
 ECDSA_DLL_API int ecdsaVerify(const ecdsaSignature *sig, const ecdsaPublicKey *pub, const void *m, mclSize size);
 ECDSA_DLL_API int ecdsaVerifyPrecomputed(const ecdsaSignature *sig, const ecdsaPrecomputedPublicKey *pub, const void *m, mclSize size);
 

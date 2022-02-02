@@ -95,6 +95,11 @@ void ecdsaSign(ecdsaSignature *sig, const ecdsaSecretKey *sec, const void *m, mc
 	sign(*cast(sig), *cast(sec), m, size);
 }
 
+void ecdsaNormalizeSignature(ecdsaSignature *sig)
+{
+	normalizeSignature(*cast(sig));
+}
+
 int ecdsaVerify(const ecdsaSignature *sig, const ecdsaPublicKey *pub, const void *m, mclSize size)
 {
 	return verify(*cast(sig), *cast(pub), m, size);

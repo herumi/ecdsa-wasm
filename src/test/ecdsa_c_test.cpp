@@ -39,6 +39,8 @@ CYBOZU_TEST_AUTO(ecdsa)
 	ecdsaSign(&sig, &sec, msg, msgSize);
 	serializeTest(sig, ecdsaSignatureSerialize, ecdsaSignatureDeserialize);
 	CYBOZU_TEST_ASSERT(ecdsaVerify(&sig, &pub, msg, msgSize));
+	ecdsaNormalizeSignature(&sig);
+	CYBOZU_TEST_ASSERT(ecdsaVerify(&sig, &pub, msg, msgSize));
 
 	ppub = ecdsaPrecomputedPublicKeyCreate();
 	CYBOZU_TEST_ASSERT(ppub);
