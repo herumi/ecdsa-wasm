@@ -168,6 +168,14 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 #endif
 };
 
+// normalize a signature to lower S signature (r, s) if s < half else (r, -s)
+inline void normalizeSignature(Signature& sig)
+{
+	if (sig.s.isNegative()) {
+		Zn::neg(sig.s, sig.s);
+	}
+}
+
 inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t msgSize)
 {
 	Zn& r = sig.r;
@@ -188,6 +196,7 @@ inline void sign(Signature& sig, const SecretKey& sec, const void *msg, size_t m
 		s += z;
 		if (s.isZero()) continue;
 		s /= k;
+		normalizeSignature(sig);
 		return;
 	}
 }
@@ -204,12 +213,14 @@ inline void mulDispatch(Ec& Q, const PrecomputedPublicKey& ppub, const Zn& y)
 	ppub.pubBase_.mul(Q, y);
 }
 
+// accept only lower S signature
 template<class Pub>
 inline bool verify(const Signature& sig, const Pub& pub, const void *msg, size_t msgSize)
 {
 	const Zn& r = sig.r;
 	const Zn& s = sig.s;
 	if (r.isZero() || s.isZero()) return false;
+	if (s.isNegative()) return false;
 	Zn z, w, u1, u2;
 	local::setHashOf(z, msg, msgSize);
 	Zn::inv(w, s);

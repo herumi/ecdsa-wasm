@@ -47,6 +47,7 @@ void serializeStrTest(const std::string& msg, const std::string& secHex, const s
 	const std::string sHex = sigHex.substr(64, 64);
 	sig.r.setStr(rHex, 16);
 	sig.s.setStr(sHex, 16);
+	normalizeSignature(sig);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
 }
 
@@ -72,6 +73,7 @@ void serializeBinaryTest(const std::string& msg, const std::string& secHex, cons
 	CYBOZU_TEST_EQUAL(pub, t);
 	Signature sig;
 	sig.deserializeHexStr(sigHex);
+	normalizeSignature(sig);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
 }
 
