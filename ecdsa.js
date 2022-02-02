@@ -295,6 +295,12 @@ const setupFactory = (createModule, getRandomValues) => {
       serialize () {
         return this._getter(mod.ecdsaSignatureSerialize)
       }
+      // normalize this to lower S
+      normalize () {
+        const sigPos = this._allocAndCopy()
+        mod._ecdsaNormalizeSignature(sigPos)
+        this._saveAndFree(sigPos)
+      }
     }
     exports.deserializeHexStrToSignature = s => {
       const r = new exports.Signature()

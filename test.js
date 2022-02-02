@@ -42,6 +42,7 @@ function valueSubTest (msg, secHex, pubHex, sigHex) {
   assert.equal(sec.serializeToHexStr(), secHex)
   assert.equal(pub.serializeToHexStr(), pubHex)
   assert.equal(sig.serializeToHexStr(), sigHex)
+  sig.normalize()
   assert(pub.verify(sig, msg))
   {
     const pub2 = sec.getPublicKey()
