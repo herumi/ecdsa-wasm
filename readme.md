@@ -63,16 +63,16 @@ ppub.destroy()
 - `Signature.deserialize(a)`
   - take `Uint8Array` of `a` and constract the object
 
-## how to build
+## how to build ecdsa_c.js
 
+Install emscripten.
 ```
 mkdir work
 cd work
 git clone git@github.com:herumi/mcl
-git clone git@github.com:herumi/cybozulib
-mkdir ecdsa-wasm
-cd mcl
-make ecdsa-wasm
+git clone git@github.com:herumi/ecdsa-wasm
+cd ecdsa-wasm
+make -C src wasm
 ```
 
 # License
