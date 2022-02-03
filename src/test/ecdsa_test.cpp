@@ -32,6 +32,8 @@ CYBOZU_TEST_AUTO(ecdsa)
 
 void serializeStrTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
 {
+	// old serialization
+	setSeriailzeMode(SerializeOld);
 	SecretKey sec;
 	sec.setStr(secHex, 16);
 	CYBOZU_TEST_EQUAL(sec.getStr(16), secHex);
@@ -49,10 +51,15 @@ void serializeStrTest(const std::string& msg, const std::string& secHex, const s
 	sig.s.setStr(sHex, 16);
 	normalizeSignature(sig);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
+	// recover mode
+	setSeriailzeMode(SerializeBitcoin);
 }
 
 void serializeBinaryTest(const std::string& msg, const std::string& secHex, const std::string& pubHex, const std::string& sigHex)
 {
+	// old serialization
+	setSeriailzeMode(SerializeOld);
+
 	SecretKey sec;
 	sec.deserializeHexStr(secHex);
 	CYBOZU_TEST_EQUAL(sec.serializeToHexStr(), secHex);
@@ -75,6 +82,16 @@ void serializeBinaryTest(const std::string& msg, const std::string& secHex, cons
 	sig.deserializeHexStr(sigHex);
 	normalizeSignature(sig);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
+	// recover mode
+std::cout << std::hex;
+	setSeriailzeMode(SerializeBitcoin);
+	char buf[100];
+	size_t n = sig.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_ASSERT(n > 0);
+	Signature sig2;
+	CYBOZU_TEST_EQUAL(sig2.deserialize(buf, n), n);
+	CYBOZU_TEST_EQUAL(sig.r, sig2.r);
+	CYBOZU_TEST_EQUAL(sig.s, sig2.s);
 }
 
 CYBOZU_TEST_AUTO(value)
@@ -103,6 +120,24 @@ CYBOZU_TEST_AUTO(value)
 		serializeStrTest(tbl[i].msg, tbl[i].sec, tbl[i].pub, tbl[i].sig);
 		serializeBinaryTest(tbl[i].msg, tbl[i].sec, tbl[i].pub, tbl[i].sig);
 	}
+}
+
+CYBOZU_TEST_AUTO(serializeDer)
+{
+	const char *r ="ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f";
+	const char *s = "7a986d955c6e0cb35d446a89d3f56100f4d7f67801c31967743a9c8e10615bed";
+	Signature sig;
+	sig.r.setStr(r, 16);
+	sig.s.setStr(s, 16);
+	const uint8_t expected[] = {0x30, 0x45, 0x02, 0x21, 0x00, 0xed, 0x81, 0xff, 0x19, 0x2e, 0x75, 0xa3, 0xfd, 0x23, 0x04, 0x00, 0x4d, 0xca, 0xdb, 0x74, 0x6f, 0xa5, 0xe2, 0x4c, 0x50, 0x31, 0xcc, 0xfc, 0xf2, 0x13, 0x20, 0xb0, 0x27, 0x74, 0x57, 0xc9, 0x8f, 0x02, 0x20, 0x7a, 0x98, 0x6d, 0x95, 0x5c, 0x6e, 0x0c, 0xb3, 0x5d, 0x44, 0x6a, 0x89, 0xd3, 0xf5, 0x61, 0x00, 0xf4, 0xd7, 0xf6, 0x78, 0x01, 0xc3, 0x19, 0x67, 0x74, 0x3a, 0x9c, 0x8e, 0x10, 0x61, 0x5b, 0xed};
+	uint8_t buf[100];
+	size_t n = sig.serialize(buf, sizeof(buf));
+	CYBOZU_TEST_EQUAL(n, sizeof(expected));
+	CYBOZU_TEST_EQUAL_ARRAY(buf, expected, n);
+	Signature sig2;
+	CYBOZU_TEST_EQUAL(n, sig2.deserialize(buf, n));
+	CYBOZU_TEST_EQUAL(sig.r, sig2.r);
+	CYBOZU_TEST_EQUAL(sig.s, sig2.s);
 }
 
 CYBOZU_TEST_AUTO(bench)

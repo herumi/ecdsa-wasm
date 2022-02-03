@@ -13,6 +13,11 @@
 
 namespace mcl { namespace ecdsa {
 
+enum {
+	SerializeOld = 0,
+	SerializeBitcoin = 1
+};
+
 namespace local {
 
 #ifndef MCLSHE_WIN_SIZE
@@ -35,6 +40,7 @@ struct Param {
 	Ec P;
 	mcl::fp::WindowMethod<Ec> Pbase;
 	size_t bitSize;
+	int serializeMode;
 };
 
 inline Param& getParam()
@@ -67,6 +73,43 @@ inline void setHashOf(Zn& x, const void *msg, size_t msgSize)
 	(void)b;
 }
 
+template<class InputStream>
+bool readByte(uint8_t& v, InputStream& is)
+{
+	return cybozu::readSome(&v, 1, is) == 1;
+}
+
+// is[0] : 0x02
+// is[1] : size
+// is[2..2+size) : big endian
+// return readSize
+// return 0 if error
+template<class InputStream>
+size_t loadBigEndian(Zn& x, InputStream& is)
+{
+	uint8_t n;
+	if (!readByte(n, is) || n != 0x02) return 0;
+	if (!readByte(n, is)) return 0;
+	if (n == 0) return 0;
+	uint8_t buf[33];
+	if (n > sizeof(buf)) return 0;
+	if (cybozu::readSome(buf, n, is) != n) return 0;
+	size_t adj = n > 1 && buf[0] == 0;
+	bool b;
+	fp::local::byteSwap(buf + adj, n - adj);
+	x.setArray(&b, buf + adj, n - adj);
+	if (!b) return 0;
+	return n + 2;
+}
+
+inline size_t getBigEndian(uint8_t *buf, size_t bufSize, const Zn& x)
+{
+	size_t n = x.getLittleEndian(buf, bufSize);
+	if (n == 0) return 0;
+	mcl::fp::local::byteSwap(buf, n);
+	return n;
+}
+
 } // mcl::ecdsa::local
 
 const local::Param& param = local::getParam();
@@ -82,7 +125,13 @@ inline void init(bool *pb)
 	Ec::setOrder(Zn::getOp().mp);
 	Fp::setETHserialization(true);
 	Zn::setETHserialization(true);
+	p.serializeMode = SerializeBitcoin;
 //	Ec::setIoMode(mcl::IoEcAffineSerialize);
+}
+
+inline void setSeriailzeMode(int mode)
+{
+	local::getParam().serializeMode = mode;
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -119,24 +168,87 @@ inline void getPublicKey(PublicKey& pub, const SecretKey& sec)
 	pub.normalize();
 }
 
+/*
+  serialize/deserialize DER format
+  https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/ch04.html
+*/
 struct Signature : public mcl::fp::Serializable<Signature> {
 	Zn r, s;
+	template<class OutputStream>
+	bool writeByte(OutputStream& os, uint8_t v) const
+	{
+		bool b;
+		cybozu::writeChar(&b, os, v);
+		return b;
+	}
 	template<class InputStream>
 	void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
 	{
-		r.load(pb, is, ioMode); if (!*pb) return;
-		s.load(pb, is, ioMode);
+		switch (param.serializeMode) {
+		case SerializeOld:
+			r.load(pb, is, ioMode); if (!*pb) return;
+			s.load(pb, is, ioMode);
+			return;
+		case SerializeBitcoin:
+		default:
+			{
+				(void)ioMode;
+				*pb = false;
+				uint8_t len;
+				if (!local::readByte(len, is) || len != 0x30) return;
+				if (!local::readByte(len, is)) return;
+				size_t rn = local::loadBigEndian(r, is);
+				if (rn == 0) return;
+				size_t sn = local::loadBigEndian(s, is);
+				if (sn == 0) return;
+				*pb = len == rn + sn;
+			}
+			return;
+		}
 	}
 	template<class OutputStream>
 	void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
 	{
-		const char sep = *fp::getIoSeparator(ioMode);
-		r.save(pb, os, ioMode); if (!*pb) return;
-		if (sep) {
-			cybozu::writeChar(pb, os, sep);
-			if (!*pb) return;
+		switch (param.serializeMode) {
+		case SerializeOld:
+			{
+				const char sep = *fp::getIoSeparator(ioMode);
+				r.save(pb, os, ioMode); if (!*pb) return;
+				if (sep) {
+					cybozu::writeChar(pb, os, sep);
+					if (!*pb) return;
+				}
+				s.save(pb, os, ioMode);
+			}
+			return;
+		case SerializeBitcoin:
+		default:
+			{
+				(void)ioMode;
+				*pb = false;
+				const size_t bufSize = 32;
+				uint8_t rBuf[bufSize], sBuf[bufSize];
+				size_t rn, sn;
+				rn = local::getBigEndian(rBuf, bufSize, r);
+				if (rn == 0) return;
+				sn = local::getBigEndian(sBuf, bufSize, s);
+				if (sn == 0) return;
+				bool rAdj = rBuf[0] >= 0x80;
+				bool sAdj = sBuf[0] >= 0x80;
+				size_t n = 4 + rn + sn + rAdj + sAdj;
+				if (!writeByte(os, 0x30)) return;
+				if (!writeByte(os, n)) return;
+				if (!writeByte(os, 0x02)) return;
+				if (!writeByte(os, rn + rAdj)) return;
+				if (rAdj && !writeByte(os, 0)) return;
+				cybozu::write(pb, os, rBuf, rn); if (!*pb) return;
+				if (!writeByte(os, 0x02)) return;
+				if (!writeByte(os, sn + sAdj)) return;
+				if (sAdj && !writeByte(os, 0)) return;
+				cybozu::write(pb, os, sBuf, sn);
+			}
+			return;
 		}
-		s.save(pb, os, ioMode);
 	}
 #ifndef CYBOZU_DONT_USE_EXCEPTION
 	template<class InputStream>
