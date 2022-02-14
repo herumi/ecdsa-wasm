@@ -307,6 +307,12 @@ const setupFactory = (createModule, getRandomValues) => {
       r.deserializeHexStr(s)
       return r
     }
+    exports.SerializeOld = 0
+    exports.SerializeBitcoin = 1 // default
+    // mode = SerilizeOld or SerializeBitcoin
+    exports.setSerializeMode = mode => {
+      mod._ecdsaSetSerializeMode(mode)
+    }
     const r = mod._ecdsaInit()
     if (r) throw new Error('ecdsaInit err ' + r)
   } // setup()
