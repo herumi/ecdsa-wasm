@@ -129,9 +129,10 @@ inline void init(bool *pb)
 //	Ec::setIoMode(mcl::IoEcAffineSerialize);
 }
 
-inline void setSeriailzeMode(int mode)
+inline int setSeriailzeMode(int mode)
 {
 	local::getParam().serializeMode = mode;
+	return 0;
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION

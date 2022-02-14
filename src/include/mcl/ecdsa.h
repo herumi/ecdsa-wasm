@@ -71,6 +71,14 @@ struct ecdsaPrecomputedPublicKey;
 */
 ECDSA_DLL_API int ecdsaInit(void);
 
+/*
+	change serializeMode
+	0 : old
+	1 : compatible with BitCoin (default)
+	return 0 if success
+*/
+ECDSA_DLL_API int ecdsaSetSerializeMode(int mode);
+
 // return written byte size if success else 0
 ECDSA_DLL_API mclSize ecdsaSecretKeySerialize(void *buf, mclSize maxBufSize, const ecdsaSecretKey *sec);
 ECDSA_DLL_API mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub);
