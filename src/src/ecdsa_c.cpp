@@ -36,6 +36,11 @@ int ecdsaInit(void)
 	return b ? 0 : -1;
 }
 
+int ecdsaSetSerializeMode(int mode)
+{
+	return setSeriailzeMode(mode);
+}
+
 mclSize ecdsaSecretKeySerialize(void *buf, mclSize maxBufSize, const ecdsaSecretKey *sec)
 {
 	return (mclSize)cast(sec)->serialize(buf, maxBufSize);
