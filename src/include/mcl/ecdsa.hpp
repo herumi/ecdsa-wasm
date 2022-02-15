@@ -90,9 +90,8 @@ size_t loadBigEndian(Zn& x, InputStream& is)
 	uint8_t n;
 	if (!readByte(n, is) || n != 0x02) return 0;
 	if (!readByte(n, is)) return 0;
-	if (n == 0) return 0;
 	uint8_t buf[33];
-	if (n > sizeof(buf)) return 0;
+	if (n == 0 || n > sizeof(buf)) return 0;
 	if (cybozu::readSome(buf, n, is) != n) return 0;
 	// negative
 	if ((buf[0] & 0x80) != 0) return 0;

@@ -83,7 +83,6 @@ void serializeBinaryTest(const std::string& msg, const std::string& secHex, cons
 	normalizeSignature(sig);
 	CYBOZU_TEST_ASSERT(verify(sig, pub, msg.c_str(), msg.size()));
 	// recover mode
-std::cout << std::hex;
 	setSeriailzeMode(SerializeBitcoin);
 	char buf[100];
 	size_t n = sig.serialize(buf, sizeof(buf));
@@ -139,6 +138,65 @@ CYBOZU_TEST_AUTO(serializeDer)
 	CYBOZU_TEST_EQUAL(sig.r, sig2.r);
 	CYBOZU_TEST_EQUAL(sig.s, sig2.s);
 }
+
+CYBOZU_TEST_AUTO(edgeCase)
+{
+	{
+		const Zn tbl[] = { 0, 1, 0x7f, 0x80, 0x7fff, 0x8000, -1 };
+		const size_t n = CYBOZU_NUM_OF_ARRAY(tbl);
+		for (size_t i = 0; i < n; i++) {
+			for (size_t j = 0; j < n; j++) {
+				Signature sig;
+				sig.r = tbl[i];
+				sig.s = tbl[j];
+				char buf[128];
+				size_t len = sig.serialize(buf, sizeof(buf));
+				CYBOZU_TEST_ASSERT(len > 0);
+				Signature sig2;
+				CYBOZU_TEST_EQUAL(sig2.deserialize(buf, len), len);
+				CYBOZU_TEST_EQUAL(sig.r, sig2.r);
+				CYBOZU_TEST_EQUAL(sig.s, sig2.s);
+			}
+		}
+	}
+	// wrong serialized data
+	{
+		// correct : { 0x30, 0x06, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00 }
+		const uint8_t buf0[] = { 0x31/* bad header */, 0x06, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00 };
+		const uint8_t buf1[] = { 0x30, 0x07/* bad length */, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00 };
+		const uint8_t buf2[] = { 0x30 };
+		const uint8_t buf3[] = { 0x30, 0x80/* too long*/ };
+		const uint8_t buf4[] = { 0x30, 0x06, 0x01/* bad marker */, 0x01, 0x00, 0x02, 0x01, 0x00 };
+		const uint8_t buf5[] = { 0x30, 0x06, 0x02 };
+		const uint8_t buf6[] = { 0x30, 0x06, 0x02, 0x00 };
+		const uint8_t buf7[] = { 0x30, 0x06, 0x02, 0x11/* too large */, 0x00, 0x02, 0x01, 0x00 };
+		const uint8_t buf8[] = { 0x30, 0x06, 0x02, 0x01, 0x80/*negative*/, 0x02, 0x01, 0x00 };
+		// (r, s) where s = char(Zn) + 1
+		const uint8_t buf9[] = { 0x30, 0x26, 0x02, 0x01, 0x00, 0x02, 0x21, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 0x41, 0x41 };
+		const uint8_t buf10[] = { 0x30, 0x07, 0x02, 0x01, 0x00, 0x02, 0x02, 0x00, 0x00/* redundant zero */ };
+		const struct {
+			const uint8_t *p;
+			size_t n;
+		} tbl[] = {
+			{ buf0, sizeof(buf0) },
+			{ buf1, sizeof(buf1) },
+			{ buf2, sizeof(buf2) },
+			{ buf3, sizeof(buf3) },
+			{ buf4, sizeof(buf4) },
+			{ buf5, sizeof(buf5) },
+			{ buf6, sizeof(buf6) },
+			{ buf7, sizeof(buf7) },
+			{ buf8, sizeof(buf8) },
+			{ buf9, sizeof(buf9) },
+			{ buf10, sizeof(buf10) },
+		};
+		for (size_t i = 0; i < CYBOZU_NUM_OF_ARRAY(tbl); i++) {
+			Signature sig;
+			CYBOZU_TEST_EQUAL(sig.deserialize(tbl[i].p, tbl[i].n), 0);
+		}
+	}
+}
+
 
 CYBOZU_TEST_AUTO(bench)
 {
