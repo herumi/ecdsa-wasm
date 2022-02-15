@@ -90,10 +90,13 @@ size_t loadBigEndian(Zn& x, InputStream& is)
 	uint8_t n;
 	if (!readByte(n, is) || n != 0x02) return 0;
 	if (!readByte(n, is)) return 0;
-	if (n == 0) return 0;
 	uint8_t buf[33];
-	if (n > sizeof(buf)) return 0;
+	if (n == 0 || n > sizeof(buf)) return 0;
 	if (cybozu::readSome(buf, n, is) != n) return 0;
+	// negative
+	if ((buf[0] & 0x80) != 0) return 0;
+	// unnecessary zero
+	if (buf[0] == 0 && n > 1 && ((buf[1] & 0x80) == 0)) return 0;
 	size_t adj = n > 1 && buf[0] == 0;
 	bool b;
 	fp::local::byteSwap(buf + adj, n - adj);
@@ -129,9 +132,10 @@ inline void init(bool *pb)
 //	Ec::setIoMode(mcl::IoEcAffineSerialize);
 }
 
-inline void setSeriailzeMode(int mode)
+inline int setSeriailzeMode(int mode)
 {
 	local::getParam().serializeMode = mode;
+	return 0;
 }
 
 #ifndef CYBOZU_DONT_USE_EXCEPTION
@@ -197,6 +201,7 @@ struct Signature : public mcl::fp::Serializable<Signature> {
 				uint8_t len;
 				if (!local::readByte(len, is) || len != 0x30) return;
 				if (!local::readByte(len, is)) return;
+				if (len >= 0x80) return;
 				size_t rn = local::loadBigEndian(r, is);
 				if (rn == 0) return;
 				size_t sn = local::loadBigEndian(s, is);
