@@ -149,34 +149,100 @@ inline void init()
 
 typedef Zn SecretKey;
 struct PublicKey : mcl::fp::Serializable<PublicKey, Ec> {
+private:
 	template<class InputStream>
-	void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+	void loadUncompressed(bool *pb, InputStream& is)
+	{
+		x.load(pb, is, IoSerialize); if (!*pb) return;
+		y.load(pb, is, IoSerialize); if (!*pb) return;
+		this->z = 1;
+		*pb = isValid();
+	}
+	template<class OutputStream>
+	void saveUncompressed(bool *pb, OutputStream& os) const
+	{
+		Ec P(*this);
+		P.normalize();
+		P.x.save(pb, os, IoSerialize);
+		if (!*pb) return;
+		P.y.save(pb, os, IoSerialize);
+	}
+	// 0x02 : y is even
+	// 0x03 : y is odd
+	template<class InputStream>
+	void loadCompressed(bool *pb, InputStream& is, uint8_t header)
+	{
+		x.load(pb, is, IoSerialize);
+		if (!*pb) return;
+		bool odd = header == 0x03;
+		*pb = Ec::getYfromX(y, x, odd);
+	}
+public:
+	template<class InputStream>
+	void load(bool *pb, InputStream& is, int = IoSerialize)
 	{
 		switch (param.serializeMode) {
 		case SerializeOld:
+			loadUncompressed(pb, is);
+			return;
+		case SerializeBitcoin:
 		default:
 			{
-				x.load(pb, is, ioMode); if (!*pb) return;
-				y.load(pb, is, ioMode); if (!*pb) return;
-				this->z = 1;
-				*pb = isValid();
+				uint8_t header;
+				*pb = local::readByte(header, is);
+				if (!*pb) return;
+				switch (header) {
+				case 0x04: // uncompressed
+					loadUncompressed(pb, is);
+					return;
+				case 0x02:
+				case 0x03:
+					loadCompressed(pb, is, header);
+					return;
+				default:
+					*pb = false;
+					return;
+				}
 			}
 			return;
 		}
 	}
 	template<class OutputStream>
-	void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+	void save(bool *pb, OutputStream& os, int = IoSerialize) const
 	{
 		switch (param.serializeMode) {
 		case SerializeOld:
+			saveUncompressed(pb, os);
+			return;
+		case SerializeBitcoin:
 		default:
-			Ec P(*this);
-			P.normalize();
-			P.x.save(pb, os, ioMode);
+			cybozu::writeChar(pb, os, 0x04);
 			if (!*pb) return;
-			P.y.save(pb, os, ioMode);
+			saveUncompressed(pb, os);
 			return;
 		}
+	}
+	template<class OutputStream>
+	void saveCompressed(bool *pb, OutputStream& os) const
+	{
+		if (isZero()) {
+			*pb = false;
+			return;
+		}
+		Ec P(*this);
+		P.normalize();
+		uint8_t header = y.isOdd() ? 0x03 : 0x02;
+		cybozu::writeChar(pb, os, header);
+		if (!*pb) return;
+		x.save(pb, os, IoSerialize);
+	}
+	// return write bytes
+	size_t serializeCompressed(void *buf, size_t maxBufSize, int = IoSerialize) const
+	{
+		cybozu::MemoryOutputStream os(buf, maxBufSize);
+		bool b;
+		saveCompressed(&b, os);
+		return b ? os.getPos() : 0;
 	}
 };
 

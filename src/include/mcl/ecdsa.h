@@ -83,6 +83,9 @@ ECDSA_DLL_API int ecdsaSetSerializeMode(int mode);
 ECDSA_DLL_API mclSize ecdsaSecretKeySerialize(void *buf, mclSize maxBufSize, const ecdsaSecretKey *sec);
 ECDSA_DLL_API mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub);
 ECDSA_DLL_API mclSize ecdsaSignatureSerialize(void *buf, mclSize maxBufSize, const ecdsaSignature *sig);
+// return 0x02 + bigEndian(x) if y is even
+// return 0x03 + bigEndian(x) if y is odd
+ECDSA_DLL_API mclSize ecdsaPublicKeySerializeCompressed(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub);
 
 // return read byte size if sucess else 0
 ECDSA_DLL_API mclSize ecdsaSecretKeyDeserialize(ecdsaSecretKey* sec, const void *buf, mclSize bufSize);

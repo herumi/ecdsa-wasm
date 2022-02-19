@@ -49,6 +49,10 @@ mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublic
 {
 	return (mclSize)cast(pub)->serialize(buf, maxBufSize);
 }
+mclSize ecdsaPublicKeySerializeCompressed(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub)
+{
+	return (mclSize)cast(pub)->serializeCompressed(buf, maxBufSize);
+}
 mclSize ecdsaSignatureSerialize(void *buf, mclSize maxBufSize, const ecdsaSignature *sig)
 {
 	return (mclSize)cast(sig)->serialize(buf, maxBufSize);
