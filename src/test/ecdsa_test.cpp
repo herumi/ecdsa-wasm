@@ -121,6 +121,56 @@ CYBOZU_TEST_AUTO(value)
 	}
 }
 
+CYBOZU_TEST_AUTO(serializePublicKey)
+{
+	// old serialization
+	setSeriailzeMode(SerializeOld);
+
+	SecretKey sec;
+	PublicKey pub, pub2;
+	sec.setByCSPRNG();
+	getPublicKey(pub, sec);
+	uint8_t buf1[64];
+	size_t n = pub.serialize(buf1, 64);
+	CYBOZU_TEST_EQUAL(n, 64);
+	n = pub2.deserialize(buf1, 64);
+	CYBOZU_TEST_EQUAL(n, 64);
+	CYBOZU_TEST_EQUAL(pub, pub2);
+	pub.normalize();
+
+	// recover mode
+	setSeriailzeMode(SerializeBitcoin);
+	// uncompressed
+	uint8_t buf2[65];
+	n = pub.serialize(buf2, 65);
+	CYBOZU_TEST_EQUAL(n, 65);
+	CYBOZU_TEST_EQUAL(buf2[0], 0x04);
+	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf2 + 1, 64);
+	pub2.clear();
+	n = pub2.deserialize(buf2, 65);
+	CYBOZU_TEST_EQUAL(n, 65);
+	CYBOZU_TEST_EQUAL(pub, pub2);
+	// compressed
+	uint8_t buf3[33];
+	n = pub.serializeCompressed(buf3, 33);
+	CYBOZU_TEST_EQUAL(n, 33);
+	CYBOZU_TEST_EQUAL(buf3[0], pub.y.isOdd() ? 0x03 : 0x02);
+	CYBOZU_TEST_EQUAL_ARRAY(buf1, buf3 + 1, 32);
+	pub2.clear();
+	n = pub2.deserialize(buf3, 33);
+	CYBOZU_TEST_EQUAL(n, 33);
+	CYBOZU_TEST_EQUAL(pub, pub2);
+
+	// swap even and odd of y
+	pub.normalize();
+	pub.y = -pub.y;
+	uint8_t buf4[33];
+	n = pub.serializeCompressed(buf4, 33);
+	CYBOZU_TEST_EQUAL(n, 33);
+	CYBOZU_TEST_EQUAL(buf4[0], pub.y.isOdd() ? 0x03 : 0x02);
+	CYBOZU_TEST_EQUAL_ARRAY(buf3 + 1, buf4 + 1, 32);
+}
+
 CYBOZU_TEST_AUTO(serializeDer)
 {
 	const char *r ="ed81ff192e75a3fd2304004dcadb746fa5e24c5031ccfcf21320b0277457c98f";

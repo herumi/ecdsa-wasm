@@ -176,6 +176,9 @@ private:
 		if (!*pb) return;
 		bool odd = header == 0x03;
 		*pb = Ec::getYfromX(y, x, odd);
+		if (*pb) {
+			z = 1;
+		}
 	}
 public:
 	template<class InputStream>
