@@ -148,7 +148,37 @@ inline void init()
 #endif
 
 typedef Zn SecretKey;
-typedef Ec PublicKey;
+struct PublicKey : mcl::fp::Serializable<PublicKey, Ec> {
+	template<class InputStream>
+	void load(bool *pb, InputStream& is, int ioMode = IoSerialize)
+	{
+		switch (param.serializeMode) {
+		case SerializeOld:
+		default:
+			{
+				x.load(pb, is, ioMode); if (!*pb) return;
+				y.load(pb, is, ioMode); if (!*pb) return;
+				this->z = 1;
+				*pb = isValid();
+			}
+			return;
+		}
+	}
+	template<class OutputStream>
+	void save(bool *pb, OutputStream& os, int ioMode = IoSerialize) const
+	{
+		switch (param.serializeMode) {
+		case SerializeOld:
+		default:
+			Ec P(*this);
+			P.normalize();
+			P.x.save(pb, os, ioMode);
+			if (!*pb) return;
+			P.y.save(pb, os, ioMode);
+			return;
+		}
+	}
+};
 
 struct PrecomputedPublicKey {
 	mcl::fp::WindowMethod<Ec> pubBase_;

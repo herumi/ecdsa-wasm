@@ -47,13 +47,7 @@ mclSize ecdsaSecretKeySerialize(void *buf, mclSize maxBufSize, const ecdsaSecret
 }
 mclSize ecdsaPublicKeySerialize(void *buf, mclSize maxBufSize, const ecdsaPublicKey *pub)
 {
-	PublicKey p(*cast(pub));
-	p.normalize();
-	size_t sizeX = p.x.serialize(buf, maxBufSize);
-	if (sizeX == 0) return 0;
-	size_t sizeY = p.y.serialize((uint8_t*)buf + sizeX, maxBufSize - sizeX);
-	if (sizeY == 0) return 0;
-	return (mclSize)(sizeX + sizeY);
+	return (mclSize)cast(pub)->serialize(buf, maxBufSize);
 }
 mclSize ecdsaSignatureSerialize(void *buf, mclSize maxBufSize, const ecdsaSignature *sig)
 {
@@ -66,15 +60,7 @@ mclSize ecdsaSecretKeyDeserialize(ecdsaSecretKey* sec, const void *buf, mclSize 
 }
 mclSize ecdsaPublicKeyDeserialize(ecdsaPublicKey* pub, const void *buf, mclSize bufSize)
 {
-	PublicKey& p = *cast(pub);
-	size_t sizeX = p.x.deserialize(buf, bufSize);
-	if (sizeX == 0) return 0;
-	size_t sizeY = p.y.deserialize((const uint8_t*)buf + sizeX, bufSize - sizeX);
-	if (sizeY == 0) return 0;
-	if (sizeX + sizeY != bufSize) return 0;
-	p.z = 1;
-	if (!p.isValid()) return 0;
-	return bufSize;
+	return (mclSize)cast(pub)->deserialize(buf, bufSize);
 }
 mclSize ecdsaSignatureDeserialize(ecdsaSignature* sig, const void *buf, mclSize bufSize)
 {
