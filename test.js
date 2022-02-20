@@ -6,6 +6,7 @@ const { performance } = require('perf_hooks')
 ecdsa.init()
   .then(() => {
     try {
+      serializePublicKeyTest()
       serializeDerTest()
       serializeTest()
       signatureTest()
@@ -35,6 +36,24 @@ function serializeTest () {
   const msg = 'abc'
   const sig = sec.sign(msg)
   serializeSubTest(sig, ecdsa.Signature)
+}
+
+function serializePublicKeyTest () {
+  for (let i = 0; i < 10; i++) {
+    const sec = new ecdsa.SecretKey()
+    sec.setByCSPRNG()
+    const pub = sec.getPublicKey()
+    const b1 = pub.serialize()
+    assert(b1.length == 65)
+    assert(b1[0] == 0x04)
+    const pub2 = new ecdsa.PublicKey()
+    pub2.deserialize(b1)
+    assert.deepEqual(b1, pub2.serialize())
+    const b2 = pub.serializeCompressed()
+    const pub3 = new ecdsa.PublicKey()
+    pub3.deserialize(b2)
+    assert.deepEqual(b1, pub3.serialize())
+  }
 }
 
 function valueSubTest (msg, secHex, pubHex, sigHex) {

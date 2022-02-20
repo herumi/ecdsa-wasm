@@ -104,6 +104,7 @@ const setupFactory = (createModule, getRandomValues) => {
     }
     mod.ecdsaSecretKeySerialize = _wrapSerialize(mod._ecdsaSecretKeySerialize)
     mod.ecdsaPublicKeySerialize = _wrapSerialize(mod._ecdsaPublicKeySerialize)
+    mod.ecdsaPublicKeySerializeCompressed = _wrapSerialize(mod._ecdsaPublicKeySerializeCompressed)
     mod.ecdsaSignatureSerialize = _wrapSerialize(mod._ecdsaSignatureSerialize)
 
     mod.ecdsaSecretKeyDeserialize = _wrapDeserialize(mod._ecdsaSecretKeyDeserialize)
@@ -235,6 +236,9 @@ const setupFactory = (createModule, getRandomValues) => {
 
       serialize () {
         return this._getter(mod.ecdsaPublicKeySerialize)
+      }
+      serializeCompressed () {
+        return this._getter(mod.ecdsaPublicKeySerializeCompressed)
       }
 
       verify (sig, m) {
