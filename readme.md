@@ -7,8 +7,7 @@
 This is a wasm version of [mcl/ecdsa.h](https://github.com/herumi/mcl/blob/master/include/mcl/ecdsa.h)
 
 ## News
-The format of `serialize()` has changed at the version 0.9.0.
-see [serialize](#serialization)
+`serialize()` supports the format defined at [BitCoin](https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/ch04.html)
 
 ## for Node.js
 ```
@@ -53,11 +52,10 @@ ppub.destroy()
 ```
 
 ### serialization
-- `SecretKey.serialize()`
-- `PublicKey.serialize()`
-- `Signature.serialize()`
-  - returns `Uint8Array` of a value as a big endian
-  - `PublicKey` returns a concatination of `x` and `y`
+- `SecretKey.serialize()` return 32-bytes Uint8Array as big-endian
+- `PublicKey.serialize()` return 65-bytes Uint8Array as 0x04 + `x` + `y`
+- `PublicKey.serializeCompressed()` return 33-bytes Uint8Array as 0x02 (y is even) or 0x03 (y is odd) + `x`
+- `Signature.serialize()` return DER-format
 - `SecretKey.deserialize(a)`
 - `PublicKey.deserialize(a)`
 - `Signature.deserialize(a)`
