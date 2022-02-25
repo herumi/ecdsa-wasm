@@ -65,10 +65,7 @@ ppub.destroy()
 
 Install emscripten.
 ```
-mkdir work
-cd work
-git clone git@github.com:herumi/mcl
-git clone git@github.com:herumi/ecdsa-wasm
+git clone --recurse-submodules git@github.com:herumi/ecdsa-wasm
 cd ecdsa-wasm
 make -C src wasm
 ```
