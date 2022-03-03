@@ -224,7 +224,7 @@ function bench (label, count, func) {
   const end = performance.now()
   const t = (end - start) / count
   const roundTime = (Math.round(t * 1000)) / 1000
-  console.log(label + ' ' + roundTime)
+  console.log(label + ' ' + roundTime + ' msec')
 }
 
 function benchEcdsa () {
