@@ -7,7 +7,8 @@
 This is a wasm version of [mcl/ecdsa.h](https://github.com/herumi/mcl/blob/master/include/mcl/ecdsa.h)
 
 ## News
-`serialize()` supports the format defined at [BitCoin](https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/ch04.html)
+- The performance is improved.
+- `serialize()` supports the format defined at [BitCoin](https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/ch04.html)
 
 ## for Node.js
 ```
