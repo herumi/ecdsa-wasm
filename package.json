@@ -1,6 +1,6 @@
 {
   "name": "ecdsa-wasm",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "ecdsa/secp256k1 + SHA-256 for Node.js by WebAssembly",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "url": "https://github.com/herumi/ecdsa-wasm/issues"
   },
   "engines": {
-    "node": ">=8.9.0"
+    "node": ">=16"
   },
   "homepage": "https://github.com/herumi/ecdsa-wasm#readme"
 }
