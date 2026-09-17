@@ -7,23 +7,34 @@ const setupFactory = (createModule, getRandomValues) => {
     const ECDSA_PUBLICKEY_SIZE = ECDSA_FP_SIZE * 3
     const ECDSA_SIGNATURE_SIZE = ECDSA_FP_SIZE * 2
 
-    const _malloc = pos => {
-      return mod._ecdsaMalloc(pos)
-    }
-    const _free = pos => {
-      mod._ecdsaFree(pos)
-    }
-    const ptrToAsciiStr = (pos, n) => {
-      let s = ''
-      for (let i = 0; i < n; i++) {
-        s += String.fromCharCode(mod.HEAP8[pos + i])
+    // shared wrappers defined in mcl/src/wasm/glue.js (embedded in ecdsa_c.js);
+    // values are passed as Uint32Array (a_) and the stack is restored in finally
+    const stackSave = mod.stackSave
+    const stackAlloc = mod.stackAlloc
+    const stackRestore = mod.stackRestore
+    const sallocCopy = mod.sallocCopy
+    const copyFromHeap32 = mod.copyFromHeap32
+    const callSetter = mod.callSetter
+    const callGetter = mod.callGetter
+    const callOp1 = mod.callOp1
+    const callOp1Input = mod.callOp1Input
+    const callGetter2Input = mod.callGetter2Input
+    const callDeserialize = mod.callDeserialize
+    const callSerialize = mod.callSerialize
+    // stack alloc and copy a message (String or Uint8Array) ; return its position
+    // (caller must wrap in stackSave/try/finally/stackRestore)
+    const sallocInput = buf => {
+      const isStr = typeof buf === 'string'
+      if (!isStr && !(buf instanceof Uint8Array) && !Array.isArray(buf)) {
+        throw new Error('err bad type:"' + Object.prototype.toString.apply(buf) + '". Use String or Uint8Array.')
       }
-      return s
-    }
-    const asciiStrToPtr = (pos, s) => {
-      for (let i = 0; i < s.length; i++) {
-        mod.HEAP8[pos + i] = s.charCodeAt(i)
+      const pos = stackAlloc(buf.length)
+      if (isStr) {
+        mod.asciiStrToPtr(pos, buf)
+      } else {
+        mod.HEAP8.set(buf, pos)
       }
+      return pos
     }
     exports.toHex = (a, start, n) => {
       let s = ''
@@ -46,75 +57,6 @@ const setupFactory = (createModule, getRandomValues) => {
       }
       return a
     }
-    const _wrapGetStr = (func, returnAsStr = true) => {
-      return (x, ioMode = 0) => {
-        const maxBufSize = 3096
-        const pos = _malloc(maxBufSize)
-        const n = func(pos, maxBufSize, x, ioMode)
-        if (n <= 0) {
-          throw new Error('err gen_str:' + x)
-        }
-        let s = null
-        if (returnAsStr) {
-          s = ptrToAsciiStr(pos, n)
-        } else {
-          s = new Uint8Array(mod.HEAP8.subarray(pos, pos + n))
-        }
-        _free(pos)
-        return s
-      }
-    }
-    const _wrapSerialize = func => {
-      return _wrapGetStr(func, false)
-    }
-    const _wrapDeserialize = func => {
-      return (x, buf) => {
-        const pos = _malloc(buf.length)
-        mod.HEAP8.set(buf, pos)
-        const r = func(x, pos, buf.length)
-        _free(pos)
-        if (r === 0) throw new Error('err _wrapDeserialize', buf)
-      }
-    }
-    /*
-      argNum : n
-      func(x0, ..., x_(n-1), buf, ioMode)
-      => func(x0, ..., x_(n-1), pos, buf.length, ioMode)
-    */
-    const _wrapInput = (func, argNum, returnValue = false) => {
-      return function () {
-        const args = [...arguments]
-        const buf = args[argNum]
-        const typeStr = Object.prototype.toString.apply(buf)
-        if (['[object String]', '[object Uint8Array]', '[object Array]'].indexOf(typeStr) < 0) {
-          throw new Error(`err bad type:"${typeStr}". Use String or Uint8Array.`)
-        }
-        const ioMode = args[argNum + 1] // may undefined
-        const pos = _malloc(buf.length)
-        if (typeStr === '[object String]') {
-          asciiStrToPtr(pos, buf)
-        } else {
-          mod.HEAP8.set(buf, pos)
-        }
-        const r = func(...args.slice(0, argNum), pos, buf.length, ioMode)
-        _free(pos)
-        if (returnValue) return r
-        if (r) throw new Error('err _wrapInput ' + buf)
-      }
-    }
-    mod.ecdsaSecretKeySerialize = _wrapSerialize(mod._ecdsaSecretKeySerialize)
-    mod.ecdsaPublicKeySerialize = _wrapSerialize(mod._ecdsaPublicKeySerialize)
-    mod.ecdsaPublicKeySerializeCompressed = _wrapSerialize(mod._ecdsaPublicKeySerializeCompressed)
-    mod.ecdsaSignatureSerialize = _wrapSerialize(mod._ecdsaSignatureSerialize)
-
-    mod.ecdsaSecretKeyDeserialize = _wrapDeserialize(mod._ecdsaSecretKeyDeserialize)
-    mod.ecdsaPublicKeyDeserialize = _wrapDeserialize(mod._ecdsaPublicKeyDeserialize)
-    mod.ecdsaSignatureDeserialize = _wrapDeserialize(mod._ecdsaSignatureDeserialize)
-
-    mod.ecdsaSign = _wrapInput(mod._ecdsaSign, 2)
-    mod.ecdsaVerify = _wrapInput(mod._ecdsaVerify, 2, true)
-    mod.ecdsaVerifyPrecomputed = _wrapInput(mod._ecdsaVerifyPrecomputed, 2, true)
-
     class Common {
       constructor (size) {
         this.a_ = new Uint32Array(size / 4)
@@ -136,43 +78,22 @@ const setupFactory = (createModule, getRandomValues) => {
         this.a_.fill(0)
       }
 
-      // alloc new array
-      _alloc () {
-        return _malloc(this.a_.length * 4)
-      }
-
-      // alloc and copy a_ to mod.HEAP32[pos / 4]
-      _allocAndCopy () {
-        const pos = this._alloc()
-        mod.HEAP32.set(this.a_, pos / 4)
-        return pos
-      }
-
-      // save pos to a_
-      _save (pos) {
-        this.a_.set(mod.HEAP32.subarray(pos / 4, pos / 4 + this.a_.length))
-      }
-
-      // save and free
-      _saveAndFree (pos) {
-        this._save(pos)
-        _free(pos)
-      }
-
-      // set parameter (p1, p2 may be undefined)
+      // this = func(p1, p2) ; throw if func returns non-zero (p1, p2 may be undefined)
       _setter (func, p1, p2) {
-        const pos = this._alloc()
-        const r = func(pos, p1, p2)
-        this._saveAndFree(pos)
-        if (r) throw new Error('_setter err')
+        callSetter(func, this.a_, p1, p2)
       }
 
-      // getter (p1, p2 may be undefined)
+      // return func(this, p1, p2)
       _getter (func, p1, p2) {
-        const pos = this._allocAndCopy()
-        const s = func(pos, p1, p2)
-        _free(pos)
-        return s
+        return callGetter(func, this.a_, p1, p2)
+      }
+
+      _deserialize (func, buf) {
+        callDeserialize(func, this.a_, buf)
+      }
+
+      _serialize (func) {
+        return callSerialize(func, this.a_)
       }
     }
 
@@ -182,11 +103,11 @@ const setupFactory = (createModule, getRandomValues) => {
       }
 
       deserialize (s) {
-        this._setter(mod.ecdsaSecretKeyDeserialize, s)
+        this._deserialize(mod._ecdsaSecretKeyDeserialize, s)
       }
 
       serialize () {
-        return this._getter(mod.ecdsaSecretKeySerialize)
+        return this._serialize(mod._ecdsaSecretKeySerialize)
       }
 
       setByCSPRNG () {
@@ -195,11 +116,7 @@ const setupFactory = (createModule, getRandomValues) => {
 
       getPublicKey () {
         const pub = new exports.PublicKey()
-        const secPos = this._allocAndCopy()
-        const pubPos = pub._alloc()
-        mod._ecdsaGetPublicKey(pubPos, secPos)
-        pub._saveAndFree(pubPos)
-        _free(secPos)
+        callOp1(mod._ecdsaGetPublicKey, pub.a_, this.a_)
         return pub
       }
 
@@ -211,11 +128,8 @@ const setupFactory = (createModule, getRandomValues) => {
       */
       sign (m) {
         const sig = new exports.Signature()
-        const secPos = this._allocAndCopy()
-        const sigPos = sig._alloc()
-        mod.ecdsaSign(sigPos, secPos, m)
-        sig._saveAndFree(sigPos)
-        _free(secPos)
+        const r = callOp1Input(mod._ecdsaSign, sig.a_, this.a_, m)
+        if (r) throw new Error('err ecdsaSign')
         return sig
       }
     }
@@ -231,23 +145,19 @@ const setupFactory = (createModule, getRandomValues) => {
       }
 
       deserialize (s) {
-        this._setter(mod.ecdsaPublicKeyDeserialize, s)
+        this._deserialize(mod._ecdsaPublicKeyDeserialize, s)
       }
 
       serialize () {
-        return this._getter(mod.ecdsaPublicKeySerialize)
+        return this._serialize(mod._ecdsaPublicKeySerialize)
       }
+
       serializeCompressed () {
-        return this._getter(mod.ecdsaPublicKeySerializeCompressed)
+        return this._serialize(mod._ecdsaPublicKeySerializeCompressed)
       }
 
       verify (sig, m) {
-        const pubPos = this._allocAndCopy()
-        const sigPos = sig._allocAndCopy()
-        const r = mod.ecdsaVerify(sigPos, pubPos, m)
-        _free(sigPos)
-        _free(pubPos)
-        return r !== 0
+        return callGetter2Input(mod._ecdsaVerify, sig.a_, this.a_, m) !== 0
       }
     }
     exports.deserializeHexStrToPublicKey = s => {
@@ -274,16 +184,18 @@ const setupFactory = (createModule, getRandomValues) => {
         initialize PrecomputedPublicKey by PublicKey pub
       */
       init (pub) {
-        const pubPos = pub._allocAndCopy()
-        mod._ecdsaPrecomputedPublicKeyInit(this.p, pubPos)
-        _free(pubPos)
+        callGetter((pubPos, p) => mod._ecdsaPrecomputedPublicKeyInit(p, pubPos), pub.a_, this.p)
       }
 
       verify (sig, m) {
-        const sigPos = sig._allocAndCopy()
-        const r = mod.ecdsaVerifyPrecomputed(sigPos, this.p, m)
-        _free(sigPos)
-        return r !== 0
+        const stack = stackSave()
+        try {
+          const sigPos = sallocCopy(sig.a_)
+          const mPos = sallocInput(m)
+          return mod._ecdsaVerifyPrecomputed(sigPos, this.p, mPos, m.length) !== 0
+        } finally {
+          stackRestore(stack)
+        }
       }
     }
 
@@ -293,17 +205,23 @@ const setupFactory = (createModule, getRandomValues) => {
       }
 
       deserialize (s) {
-        this._setter(mod.ecdsaSignatureDeserialize, s)
+        this._deserialize(mod._ecdsaSignatureDeserialize, s)
       }
 
       serialize () {
-        return this._getter(mod.ecdsaSignatureSerialize)
+        return this._serialize(mod._ecdsaSignatureSerialize)
       }
+
       // normalize this to lower S
       normalize () {
-        const sigPos = this._allocAndCopy()
-        mod._ecdsaNormalizeSignature(sigPos)
-        this._saveAndFree(sigPos)
+        const stack = stackSave()
+        try {
+          const sigPos = sallocCopy(this.a_)
+          mod._ecdsaNormalizeSignature(sigPos)
+          copyFromHeap32(this.a_, sigPos)
+        } finally {
+          stackRestore(stack)
+        }
       }
     }
     exports.deserializeHexStrToSignature = s => {
@@ -320,12 +238,9 @@ const setupFactory = (createModule, getRandomValues) => {
     const r = mod._ecdsaInit()
     if (r) throw new Error('ecdsaInit err ' + r)
   } // setup()
-  const _cryptoGetRandomValues = function(p, n) {
-    const a = new Uint8Array(n)
+  // called from glue.js with a Uint8Array to be filled
+  const _cryptoGetRandomValues = function (a) {
     exports.getRandomValues(a)
-    for (let i = 0; i < n; i++) {
-      exports.mod.HEAP8[p + i] = a[i]
-    }
   }
   exports.getRandFunc = () => {
     return exports.getRandomValues
@@ -337,6 +252,7 @@ const setupFactory = (createModule, getRandomValues) => {
     exports.getRandomValues = getRandomValues
     exports.mod = await createModule({
       cryptoGetRandomValues: _cryptoGetRandomValues,
+      prefix: 'ecdsa'
     })
     setup(exports)
   }
