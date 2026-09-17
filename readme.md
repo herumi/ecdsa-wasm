@@ -64,12 +64,13 @@ ppub.destroy()
 
 ## how to build ecdsa_c.js
 
-Install emscripten.
+Install clang-21, wasm-ld-21 (`lld-21`) and wasm-opt (`binaryen`).
 ```
 git clone --recurse-submodules git@github.com:herumi/ecdsa-wasm
 cd ecdsa-wasm
-make -C src wasm
+make -C src
 ```
+Use `make -C src LLVM_VER=-20` to build with another LLVM version.
 
 # License
 
