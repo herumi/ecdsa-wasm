@@ -3,3 +3,5 @@
 *.d
 *.exe
 src/result.txt
+src/obj/
+src/ecdsa.wasm
