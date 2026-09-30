@@ -7,7 +7,8 @@
 This is a wasm version of [mcl/ecdsa.h](https://github.com/herumi/mcl/blob/master/include/mcl/ecdsa.h)
 
 ## News
-- The performance is improved.
+- 2026/9/30 about 10% speed up
+- 2023/8/17 The performance is improved.
 - `serialize()` supports the format defined at [BitCoin](https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/ch04.html)
 
 ## for Node.js
