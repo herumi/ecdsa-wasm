@@ -232,12 +232,13 @@ function benchEcdsa () {
   const sec = new ecdsa.SecretKey()
   sec.setByCSPRNG()
   const pub = sec.getPublicKey()
-  bench('sign', 50, () => sec.sign(msg))
+  const C = 10000
+  bench('sign', C, () => sec.sign(msg))
   const sig = sec.sign(msg)
-  bench('verify', 50, () => pub.verify(sig, msg))
+  bench('verify', C, () => pub.verify(sig, msg))
   const ppub = new ecdsa.PrecomputedPublicKey()
   ppub.init(pub)
-  bench('precomputed verify', 50, () => ppub.verify(sig, msg))
+  bench('precomputed verify', C, () => ppub.verify(sig, msg))
   ppub.destroy()
 }
 
